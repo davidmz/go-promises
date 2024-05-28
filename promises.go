@@ -76,8 +76,10 @@ func Then[T, P any](p Promise[T], gen func(T) (P, error)) Promise[P] {
 	return New((func() (P, error) {
 		v, err := p.Wait()
 		if err != nil {
-			return *new(P), err
+			return zero[P](), err
 		}
 		return gen(v)
 	}))
 }
+
+func zero[T any]() T { return *new(T) }

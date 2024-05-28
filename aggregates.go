@@ -57,7 +57,7 @@ func Any[T any](ps ...Promise[T]) Promise[T] {
 			}
 		}
 
-		return *new(T), &AggregateError{errs}
+		return zero[T](), &AggregateError{errs}
 	})
 }
 
@@ -78,7 +78,7 @@ func Race[T any](ps ...Promise[T]) Promise[T] {
 		}
 
 		// We should never reach this
-		return *new(T), nil
+		return zero[T](), nil
 	})
 }
 
