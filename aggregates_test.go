@@ -183,3 +183,18 @@ func (suite *AggregatesSuite) TestAny_delayed() {
 	suite.Equal(42, val)
 	suite.Nil(err)
 }
+
+func (suite *AggregatesSuite) TestAllSettled() {
+	p := promises.AllSettled(
+		promises.Resolve(41),
+		promises.Resolve(42),
+		promises.Resolve(43),
+	)
+	val, err := p.Wait()
+	suite.Equal([]promises.Result[int]{
+		{41, nil},
+		{42, nil},
+		{43, nil},
+	}, val)
+	suite.Nil(err)
+}

@@ -1,5 +1,7 @@
 package promises
 
+import "sync"
+
 // All takes an array of promises and returns a single promise. This returned
 // promise fulfills when all of the input's promises fulfill (including when an
 // empty iterable is passed), with an array of the fulfillment values. It
@@ -119,8 +121,11 @@ type iResult[T any] struct {
 func collectResults[T any](ps []Promise[T]) (<-chan iResult[T], chan<- struct{}) {
 	agg := make(chan iResult[T])
 	abort := make(chan struct{})
+	wg := new(sync.WaitGroup)
+	wg.Add(len(ps))
 	for i, p := range ps {
 		go func(i int, p Promise[T]) {
+			defer wg.Done()
 			select {
 			case <-p.Done():
 			case <-abort:
@@ -134,5 +139,9 @@ func collectResults[T any](ps []Promise[T]) (<-chan iResult[T], chan<- struct{})
 			}
 		}(i, p)
 	}
+	go func() {
+		wg.Wait()
+		close(agg)
+	}()
 	return agg, abort
 }
