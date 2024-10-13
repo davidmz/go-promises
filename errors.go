@@ -23,17 +23,17 @@ func handlePanic(reject func(error)) {
 	}
 }
 
-// Errors returns from [Any] function when some promises are rejected.
-// Its Errors field always returns the same number (and order) of errors as the
-// number of promises passed. If some promise is fulfilled, the corresponding
-// error is nil.
+// Errors returns from [Any] function when some promises are rejected. It always
+// contains the same number (and order) of errors as the number of promises
+// passed. If some promise is fulfilled, the corresponding error is nil.
 type Errors []error
 
-// Error returns the "\n"-join of all not-nil errors.
+// Err returns all not-nil errors as a single error.
 func (e Errors) Err() error {
 	return errors.Join(e...)
 }
 
+// Error returns the texts of all not-nil errors.
 func (e Errors) Error() string {
 	return e.Err().Error()
 }
