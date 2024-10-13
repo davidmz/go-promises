@@ -45,7 +45,7 @@ func Reject[T any](err error) Promise[T] {
 func New[T any](gen func() (T, error)) Promise[T] {
 	p, resolve, reject := WithResolvers[T]()
 	if gen == nil {
-		resolve(*new(T))
+		resolve(zero[T]())
 		return p
 	}
 	go func() {
