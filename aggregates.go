@@ -13,7 +13,7 @@ func All[T any](ps ...Promise[T]) Promise[[]T] {
 	}
 	return New(func() ([]T, error) {
 		agg, abort := collectResults(ps)
-		defer close(abort)
+		defer abort()
 
 		values := make([]T, len(ps))
 		settled := 0
@@ -44,7 +44,7 @@ func Any[T any](ps ...Promise[T]) Promise[T] {
 
 	return New(func() (T, error) {
 		agg, abort := collectResults(ps)
-		defer close(abort)
+		defer abort()
 
 		errs := make([]error, len(ps))
 		settled := 0
@@ -73,7 +73,7 @@ func Race[T any](ps ...Promise[T]) Promise[T] {
 
 	return New(func() (T, error) {
 		agg, abort := collectResults(ps)
-		defer close(abort)
+		defer abort()
 
 		for r := range agg {
 			return r.Value, r.Err
@@ -95,7 +95,7 @@ func AllSettled[T any](ps ...Promise[T]) Promise[[]Result[T]] {
 
 	return New(func() ([]Result[T], error) {
 		agg, abort := collectResults(ps)
-		defer close(abort)
+		defer abort()
 
 		results := make([]Result[T], len(ps))
 		for r := range agg {
@@ -118,9 +118,9 @@ type iResult[T any] struct {
 	Result[T]
 }
 
-func collectResults[T any](ps []Promise[T]) (<-chan iResult[T], chan<- struct{}) {
-	agg := make(chan iResult[T])
-	abort := make(chan struct{})
+func collectResults[T any](ps []Promise[T]) (resultsChan <-chan iResult[T], abort func()) {
+	aggChan := make(chan iResult[T])
+	abortChan := make(chan struct{})
 	wg := new(sync.WaitGroup)
 	wg.Add(len(ps))
 	for i, p := range ps {
@@ -128,20 +128,20 @@ func collectResults[T any](ps []Promise[T]) (<-chan iResult[T], chan<- struct{})
 			defer wg.Done()
 			select {
 			case <-p.Done():
-			case <-abort:
+			case <-abortChan:
 				return
 			}
 			v, e := p.Wait()
 			r := iResult[T]{i, Result[T]{v, e}}
 			select {
-			case agg <- r:
-			case <-abort:
+			case aggChan <- r:
+			case <-abortChan:
 			}
 		}(i, p)
 	}
 	go func() {
 		wg.Wait()
-		close(agg)
+		close(aggChan)
 	}()
-	return agg, abort
+	return aggChan, func() { close(abortChan) }
 }
