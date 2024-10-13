@@ -1,8 +1,8 @@
 package promises
 
 import (
+	"errors"
 	"fmt"
-	"strings"
 )
 
 // ErrPanic returns from promise created by New or NewVoid when the generation
@@ -23,28 +23,17 @@ func handlePanic(reject func(error)) {
 	}
 }
 
-// AggregateError returns from [Any] function when some promises are rejected.
+// Errors returns from [Any] function when some promises are rejected.
 // Its Errors field always returns the same number (and order) of errors as the
 // number of promises passed. If some promise is fulfilled, the corresponding
 // error is nil.
-type AggregateError struct {
-	Errors []error
-}
+type Errors []error
 
 // Error returns the "\n"-join of all not-nil errors.
-func (e *AggregateError) Error() string {
-	var b strings.Builder
-	for _, err := range e.Errors {
-		if err == nil {
-			continue
-		}
-		if b.Len() > 0 {
-			b.WriteRune('\n')
-		}
-		b.WriteString(err.Error())
-	}
-	if b.Len() == 0 {
-		b.WriteString("empty error")
-	}
-	return b.String()
+func (e Errors) Err() error {
+	return errors.Join(e...)
+}
+
+func (e Errors) Error() string {
+	return e.Err().Error()
 }

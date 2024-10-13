@@ -120,9 +120,9 @@ func (suite *AggregatesSuite) TestAny_empty() {
 	suite.True(isSettled(promise), "promise should be settled")
 	val, err := promise.Wait()
 	suite.Zero(val)
-	var expectedErr *promises.AggregateError
+	var expectedErr promises.Errors
 	suite.ErrorAs(err, &expectedErr)
-	suite.Empty(expectedErr.Errors)
+	suite.Empty(expectedErr)
 }
 
 func (suite *AggregatesSuite) TestAny_all_resolved() {
@@ -147,9 +147,9 @@ func (suite *AggregatesSuite) TestAny_all_rejected() {
 	)
 	val, err := p.Wait()
 	suite.Zero(val)
-	var expectedErr *promises.AggregateError
+	var expectedErr promises.Errors
 	suite.ErrorAs(err, &expectedErr)
-	suite.Equal([]error{tgtErr1, tgtErr2, tgtErr3}, expectedErr.Errors)
+	suite.Equal(promises.Errors{tgtErr1, tgtErr2, tgtErr3}, expectedErr)
 }
 
 func (suite *AggregatesSuite) TestAny_one_resolved() {

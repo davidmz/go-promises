@@ -1,6 +1,9 @@
 package promises
 
-import "sync"
+import (
+	"errors"
+	"sync"
+)
 
 // All takes an array of promises and returns a single promise. This returned
 // promise fulfills when all of the input's promises fulfill (including when an
@@ -35,18 +38,18 @@ func All[T any](ps ...Promise[T]) Promise[[]T] {
 // Any takes an array of promises and returns a single promise. This returned
 // promise fulfills when any of the input's promises fulfills, with this first
 // fulfillment value. It rejects when all of the input's promises reject
-// (including when an empty iterable is passed), with an [AggregateError]
+// (including when an empty iterable is passed), with an [Errors]
 // containing an array of rejection reasons.
 func Any[T any](ps ...Promise[T]) Promise[T] {
 	if len(ps) == 0 {
-		return Reject[T](new(AggregateError))
+		return Reject[T](make(Errors, 0))
 	}
 
 	return New(func() (T, error) {
 		agg, abort := collectResults(ps)
 		defer abort()
 
-		errs := make([]error, len(ps))
+		errs := make(Errors, len(ps))
 		settled := 0
 		for r := range agg {
 			settled++
@@ -59,7 +62,7 @@ func Any[T any](ps ...Promise[T]) Promise[T] {
 			}
 		}
 
-		return zero[T](), &AggregateError{errs}
+		return zero[T](), errs
 	})
 }
 
@@ -111,6 +114,16 @@ func AllSettled[T any](ps ...Promise[T]) Promise[[]Result[T]] {
 type Result[T any] struct {
 	Value T
 	Err   error
+}
+
+type Results[T any] []Result[T]
+
+func (r Results[T]) Err() error {
+	errs := make([]error, len(r))
+	for i, result := range r {
+		errs[i] = result.Err
+	}
+	return errors.Join(errs...)
 }
 
 type iResult[T any] struct {
