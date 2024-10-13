@@ -71,7 +71,11 @@ func NewVoid(gen func() error) Promise[struct{}] {
 }
 
 // Then is an utility function that waits for the given promise and, if it
-// fulfilled, processes the result using the gen function.
+// fulfilled, processes the result using the gen function, that returns a
+// (value, error).
+//
+// It will be much more convenient to have this function as a Promise method,
+// but Go methods cannot have own type parameters.
 func Then[T, P any](p Promise[T], gen func(T) (P, error)) Promise[P] {
 	return New((func() (P, error) {
 		v, err := p.Wait()
@@ -80,6 +84,19 @@ func Then[T, P any](p Promise[T], gen func(T) (P, error)) Promise[P] {
 		}
 		return gen(v)
 	}))
+}
+
+// ThenP is an utility function that waits for the given promise and, if it
+// fulfilled, processes the result using the gen function, that returns Promise.
+//
+// It will be much more convenient to have this function as a Promise method,
+// but Go methods cannot have own type parameters.
+func ThenP[T, P any](p Promise[T], gen func(T) Promise[P]) Promise[P] {
+	v, err := p.Wait()
+	if err != nil {
+		return Reject[P](err)
+	}
+	return gen(v)
 }
 
 func zero[T any]() T { return *new(T) }

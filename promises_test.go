@@ -124,3 +124,19 @@ func (suite *NewPromiseSuite) TestNewPanic() {
 	suite.Equal(0, val, "promise value should be zero")
 	suite.ErrorContains(err, "panic: AAA!")
 }
+
+func (suite *NewPromiseSuite) TestThen() {
+	promise := promises.Resolve(42)
+	promise2 := promises.Then(promise, func(x int) (int, error) { return x + 1, nil })
+	val, err := promise2.Wait()
+	suite.Equal(43, val, "promise should resolve with correct value")
+	suite.Nil(err, "error should be nil")
+}
+
+func (suite *NewPromiseSuite) TestThenP() {
+	promise := promises.Resolve(42)
+	promise2 := promises.ThenP(promise, func(x int) promises.Promise[int] { return promises.Resolve(x + 1) })
+	val, err := promise2.Wait()
+	suite.Equal(43, val, "promise should resolve with correct value")
+	suite.Nil(err, "error should be nil")
+}
