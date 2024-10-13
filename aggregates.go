@@ -89,18 +89,18 @@ func Race[T any](ps ...Promise[T]) Promise[T] {
 
 // AllSettled takes an array of promises and returns a single promise. This
 // returned promise fulfills when all of the input's promises settle (including
-// when an empty iterable is passed), with an array of [Result] objects that
-// describe the outcome of each promise.
-func AllSettled[T any](ps ...Promise[T]) Promise[[]Result[T]] {
+// when an empty iterable is passed), with a [Results] objects that describe the
+// outcome of each promise. Promise returned by this method is never rejected.
+func AllSettled[T any](ps ...Promise[T]) Promise[Results[T]] {
 	if len(ps) == 0 {
-		return Resolve[[]Result[T]](nil)
+		return Resolve[Results[T]](nil)
 	}
 
-	return New(func() ([]Result[T], error) {
+	return New(func() (Results[T], error) {
 		agg, abort := collectResults(ps)
 		defer abort()
 
-		results := make([]Result[T], len(ps))
+		results := make(Results[T], len(ps))
 		for r := range agg {
 			results[r.Index] = r.Result
 		}
@@ -109,15 +109,17 @@ func AllSettled[T any](ps ...Promise[T]) Promise[[]Result[T]] {
 	})
 }
 
-// The result represents the outcome of an resolved or rejected promise. It is
-// used in the [AllSettled] response.
+// Result is an element of the [Results] array.
 type Result[T any] struct {
 	Value T
 	Err   error
 }
 
+// Results represents the outcome of an resolved or rejected promise. It is
+// used in the [AllSettled] response.
 type Results[T any] []Result[T]
 
+// Err returns all not-nil errors as a single error, or nil if there are no.
 func (r Results[T]) Err() error {
 	errs := make([]error, len(r))
 	for i, result := range r {
